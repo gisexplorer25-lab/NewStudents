@@ -1038,9 +1038,28 @@ async function openGroupsModal(){
     GROUPS.forEach(g => { payload[`group${g}`] = document.getElementById(`group-link-${g}`).value.trim(); });
     try{
       await withTimeout(setDoc(doc(db,'meta','groupLinks'), payload, { merge:true }), 15000);
+
+      // مزامنة الطلبات المقبولة بالفعل: الرابط بيتنسخ داخل الطلب وقت القبول،
+      // فلو الطلب اتقبل قبل حفظ الروابط (أو الرابط اتغير) لازم نحدّثه هنا
+      const toSync = allRequests.filter(r => r.status === 'approved' && (
+        (r.groupLink || null) !== (payload[`group${r.group}`] || null) ||
+        (r.mainGroupLink || null) !== (payload.main || null)
+      ));
+      for(let i = 0; i < toSync.length; i += 400){
+        const batch = writeBatch(db);
+        toSync.slice(i, i + 400).forEach(r => {
+          batch.update(doc(db,'requests',r.requestId), {
+            groupLink: payload[`group${r.group}`] || null,
+            mainGroupLink: payload.main || null
+          });
+        });
+        await withTimeout(batch.commit(), 20000);
+      }
+
       const saved = document.getElementById('groups-saved');
+      saved.textContent = toSync.length ? `✓ تم الحفظ وتحديث ${toSync.length} طلب مقبول` : '✓ تم الحفظ';
       saved.style.display = 'block';
-      setTimeout(()=>saved.style.display='none', 2000);
+      setTimeout(()=>saved.style.display='none', 3000);
     }catch(e){ alert('حدث خطأ أثناء الحفظ: ' + (e.code || '') + ' ' + e.message); }
   };
 }
