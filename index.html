@@ -32,7 +32,11 @@
   body{
     margin:0;
     font-family:'Tajawal',sans-serif;
-    background:var(--paper);
+    background:
+      linear-gradient(var(--paper),var(--paper)),
+      repeating-linear-gradient(0deg, rgba(110,30,42,.05) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(90deg, rgba(110,30,42,.05) 0 1px, transparent 1px 42px);
+    background-attachment:fixed;
     color:var(--ink);
     padding-top:env(safe-area-inset-top,0px);
     padding-bottom:env(safe-area-inset-bottom,0px);
@@ -65,6 +69,17 @@
   }
   header.hero h1{font-size:26px;margin-bottom:8px}
   header.hero .sub{font-size:15px;opacity:.9;font-weight:500}
+  .coords{
+    font-family:'Tajawal',monospace;font-size:12px;letter-spacing:.4px;
+    color:rgba(255,255,255,.72);margin-top:10px;display:flex;align-items:center;gap:6px;
+  }
+  .compass-rose{
+    position:absolute;top:14px;left:14px;width:54px;height:54px;opacity:.5;z-index:1;
+  }
+  .sat-track{
+    position:absolute;top:8px;right:-20px;width:160px;height:160px;opacity:.35;z-index:0;
+    pointer-events:none;
+  }
 
   main{padding:22px 0 60px}
   .card{
@@ -237,7 +252,7 @@ const storage = getStorage(fbApp);
 
 const PROGRAM_NAME = "برنامج المساحة ونظم المعلومات الجغرافية والاستشعار عن بعد";
 const YEAR = "2026";
-const GROUPS = ["1","2","3","4"];
+const GROUPS = ["1","2","3","4","5","6"];
 const REJECT_REASONS = [
   "Screenshot غير واضح",
   "بيانات غير مطابقة",
@@ -320,14 +335,36 @@ function statusBadge(status){
   return `<span class="status-badge status-pending">🟡 قيد المراجعة</span>`;
 }
 
-function topoSvg(light){
-  const stroke = light ? 'white' : '%236E1E2A';
+function topoSvg(){
   return `<svg class="topo" viewBox="0 0 400 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M0,150 Q100,100 200,150 T400,140" fill="none" stroke="white" stroke-width="1"/>
     <path d="M0,170 Q100,120 200,170 T400,160" fill="none" stroke="white" stroke-width="1"/>
     <path d="M0,190 Q100,140 200,190 T400,180" fill="none" stroke="white" stroke-width="1"/>
     <path d="M0,40 Q100,10 200,40 T400,30" fill="none" stroke="white" stroke-width="1"/>
     <path d="M0,20 Q100,-10 200,20 T400,10" fill="none" stroke="white" stroke-width="1"/>
+    <g stroke="white" stroke-width=".6" opacity=".5">
+      <line x1="0" y1="0" x2="0" y2="200"/><line x1="80" y1="0" x2="80" y2="200"/>
+      <line x1="160" y1="0" x2="160" y2="200"/><line x1="240" y1="0" x2="240" y2="200"/>
+      <line x1="320" y1="0" x2="320" y2="200"/><line x1="400" y1="0" x2="400" y2="200"/>
+    </g>
+  </svg>`;
+}
+
+function compassRoseSvg(){
+  return `<svg class="compass-rose" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="44" fill="none" stroke="white" stroke-width="1.4"/>
+    <circle cx="50" cy="50" r="2.5" fill="white"/>
+    <path d="M50,8 L57,50 L50,92 L43,50 Z" fill="white" opacity=".9"/>
+    <path d="M8,50 L50,43 L92,50 L50,57 Z" fill="white" opacity=".5"/>
+    <text x="50" y="12" text-anchor="middle" fill="white" font-size="11" font-weight="700">N</text>
+  </svg>`;
+}
+
+function satTrackSvg(){
+  return `<svg class="sat-track" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="80" cy="80" rx="70" ry="30" fill="none" stroke="white" stroke-width="1" transform="rotate(-18 80 80)"/>
+    <circle cx="146" cy="58" r="3.2" fill="white"/>
+    <circle cx="80" cy="80" r="1.6" fill="white"/>
   </svg>`;
 }
 
@@ -335,18 +372,19 @@ function topoSvg(light){
 function renderHome(){
   app.innerHTML = `
   <header class="hero">
-    ${topoSvg(true)}
+    ${topoSvg()}${compassRoseSvg()}${satTrackSvg()}
     <div class="wrap">
-      <span class="eyebrow-badge">📍 كلية الآداب — جامعة القاهرة</span>
+      <span class="eyebrow-badge">🛰️ كلية الآداب — جامعة القاهرة</span>
       <h1>${PROGRAM_NAME}</h1>
       <p class="sub">تسجيل طلاب الدفعة الجديدة ${YEAR}</p>
+      <p class="coords">⌖ 30.0444°N, 31.2357°E — القاهرة</p>
     </div>
   </header>
   <main>
     <div class="wrap">
       <div class="card welcome">
         <p>أهلًا بطلاب الدفعة الجديدة 👋</p>
-        <p>من فضلك قم بإدخال بياناتك ورفع Screenshot يثبت قبولك في مقابلة القسم ويوضح المجموعة الخاصة بك وكود المصاريف.</p>
+        <p>من فضلك قم بإدخال بياناتك ورفع Screenshot يثبت قبولك في مقابلة القسم ويوضح المجموعة الخاصة بك.</p>
         <p>بعد مراجعة الطلب من فريق الإرشاد سيتم إتاحة رابط جروب الدفعة لك.</p>
       </div>
       <div class="stack">
@@ -372,18 +410,14 @@ function renderApplyForm(){
   <main><div class="wrap">
     <form class="card" id="apply-form" novalidate>
       <div class="field">
-        <label>الاسم رباعي</label>
-        <input type="text" id="f-name" placeholder="مثال: أحمد محمد علي حسن" required>
-        <div class="err" id="err-name">من فضلك أدخل الاسم رباعيًا</div>
+        <label>الاسم ثلاثي</label>
+        <input type="text" id="f-name" placeholder="مثال: أحمد محمد علي" required>
+        <div class="err" id="err-name">من فضلك أدخل الاسم ثلاثيًا</div>
       </div>
       <div class="field">
-        <label>رقم الهاتف</label>
+        <label>رقم الواتساب</label>
         <input type="tel" id="f-phone" placeholder="01xxxxxxxxx" required>
-        <div class="err" id="err-phone">من فضلك أدخل رقم هاتف صحيح</div>
-      </div>
-      <div class="field">
-        <label>البرنامج / القسم</label>
-        <input type="text" id="f-program" value="${PROGRAM_NAME}" readonly style="background:var(--paper-2);color:#6a5a5d">
+        <div class="err" id="err-phone">من فضلك أدخل رقم واتساب صحيح</div>
       </div>
       <div class="field">
         <label>رقم المجموعة</label>
@@ -392,11 +426,6 @@ function renderApplyForm(){
           ${GROUPS.map(g=>`<option value="${g}">مجموعة ${g}</option>`).join('')}
         </select>
         <div class="err" id="err-group">من فضلك اختر المجموعة</div>
-      </div>
-      <div class="field">
-        <label>كود المصاريف</label>
-        <input type="text" id="f-fees" placeholder="مثال: 20261234" required>
-        <div class="err" id="err-fees">من فضلك أدخل كود المصاريف</div>
       </div>
 
       <div class="field">
@@ -453,15 +482,13 @@ function renderApplyForm(){
     const name = document.getElementById('f-name').value.trim();
     const phone = document.getElementById('f-phone').value.trim();
     const group = document.getElementById('f-group').value;
-    const fees = document.getElementById('f-fees').value.trim();
     const confirmed = document.getElementById('f-confirm').checked;
 
     let valid = true;
     const setErr = (id, cond) => { document.getElementById(id).classList.toggle('show', cond); if(cond) valid=false; };
-    setErr('err-name', name.split(/\s+/).filter(Boolean).length < 4);
+    setErr('err-name', name.split(/\s+/).filter(Boolean).length < 3);
     setErr('err-phone', !/^01[0-9]{9}$/.test(phone));
     setErr('err-group', !group);
-    setErr('err-fees', fees.length < 3);
     setErr('err-file', !selectedFile);
     setErr('err-confirm', !confirmed);
     if(!valid) return;
@@ -490,7 +517,7 @@ function renderApplyForm(){
       await setDoc(doc(db,'requests',requestId), {
         requestId, name, phone,
         program: PROGRAM_NAME,
-        group, feesCode: fees,
+        group,
         screenshotPath: filePath,
         status: 'pending',
         rejectReason: null,
@@ -633,7 +660,7 @@ function renderAdminGate(){
 function renderAdminLogin(){
   app.innerHTML = `
   <header class="hero">
-    ${topoSvg(true)}
+    ${topoSvg()}${compassRoseSvg()}
     <div class="wrap">
       <span class="eyebrow-badge">🔒 لوحة فريق الإرشاد</span>
       <h1 style="font-size:21px">تسجيل دخول فريق الإرشاد</h1>
@@ -643,7 +670,7 @@ function renderAdminLogin(){
     <form class="card" id="login-form">
       <div class="field">
         <label>Username (البريد الإلكتروني)</label>
-        <input type="text" id="l-email" required>
+        <input type="text" id="l-email" placeholder="admin@geomatics26.com" required>
       </div>
       <div class="field">
         <label>Password</label>
@@ -698,7 +725,7 @@ function renderAdminDashboard(user){
 
     <div class="card">
       <div class="toolbar">
-        <input type="text" id="search-box" placeholder="بحث بالاسم / الهاتف / رقم الطلب">
+        <input type="text" id="search-box" placeholder="بحث بالاسم / رقم الواتساب / رقم الطلب">
         <select id="filter-status">
           <option value="">كل الحالات</option>
           <option value="pending">قيد المراجعة</option>
@@ -713,7 +740,7 @@ function renderAdminDashboard(user){
       <div class="table-scroll">
         <table>
           <thead><tr>
-            <th>رقم الطلب</th><th>اسم الطالب</th><th>المجموعة</th><th>الهاتف</th><th>الحالة</th><th>التاريخ</th><th>الإجراء</th>
+            <th>رقم الطلب</th><th>اسم الطالب</th><th>المجموعة</th><th>واتساب</th><th>الحالة</th><th>التاريخ</th><th>الإجراء</th>
           </tr></thead>
           <tbody id="req-tbody"></tbody>
         </table>
@@ -806,10 +833,8 @@ function openRequestModal(requestId){
       </div>
       <div class="kv">
         <b>الاسم</b><span>${escapeHtml(r.name)}</span>
-        <b>الهاتف</b><span>${escapeHtml(r.phone)}</span>
-        <b>البرنامج</b><span>${escapeHtml(r.program)}</span>
+        <b>واتساب</b><span>${escapeHtml(r.phone)}</span>
         <b>المجموعة</b><span>مجموعة ${escapeHtml(r.group)}</span>
-        <b>كود المصاريف</b><span>${escapeHtml(r.feesCode)}</span>
         <b>رقم الطلب</b><span>${escapeHtml(r.requestId)}</span>
         <b>تاريخ التقديم</b><span>${fmtDate(r.createdAt)}</span>
         <b>الحالة</b><span>${statusBadge(r.status)}</span>
