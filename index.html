@@ -103,6 +103,10 @@
   .btn-bad{background:#fff;color:var(--bad);border:1.5px solid var(--bad)}
   .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
   .btn:disabled{opacity:.55;pointer-events:none}
+  .no-copy-link{
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    -webkit-user-drag:none;
+  }
   .stack{display:flex;flex-direction:column;gap:12px}
 
   .field{margin-bottom:16px}
@@ -628,13 +632,20 @@ async function renderTrackStatus(requestId){
   const d = snap.data();
   let body = '';
   if(d.status === 'approved'){
+    const groupBtn = d.groupLink
+      ? `<button type="button" class="btn btn-good no-copy-link" data-url="${escapeHtml(d.groupLink)}" oncontextmenu="return false">دخول جروب المجموعة</button>`
+      : `<p class="muted">سيتم توفير رابط جروب المجموعة قريبًا</p>`;
+    const mainBtn = d.mainGroupLink
+      ? `<button type="button" class="btn btn-teal no-copy-link" data-url="${escapeHtml(d.mainGroupLink)}" oncontextmenu="return false">دخول جروب الدفعة الأساسي</button>`
+      : '';
     body = `
       <p class="muted" style="margin-top:14px">المجموعة</p>
       <p style="font-weight:800;font-size:18px;margin-bottom:16px">مجموعة ${escapeHtml(d.group)}</p>
-      <div class="stack">
-        ${d.groupLink ? `<a href="${escapeHtml(d.groupLink)}" target="_blank" class="btn btn-good" style="text-decoration:none;display:flex">دخول جروب المجموعة</a>` : `<p class="muted">سيتم توفير رابط جروب المجموعة قريبًا</p>`}
-        ${d.mainGroupLink ? `<a href="${escapeHtml(d.mainGroupLink)}" target="_blank" class="btn btn-teal" style="text-decoration:none;display:flex">دخول جروب الدفعة الأساسي</a>` : ''}
+      <div class="stack" oncopy="return false" oncut="return false" oncontextmenu="return false">
+        ${groupBtn}
+        ${mainBtn}
       </div>
+      <p class="muted" style="margin-top:12px;font-size:12.5px">اضغط على الزر للدخول مباشرة — الرابط غير قابل للنسخ أو المشاركة.</p>
     `;
   } else if(d.status === 'rejected'){
     body = `
@@ -664,6 +675,10 @@ async function renderTrackStatus(requestId){
   document.getElementById('back-home').onclick = () => go('/');
   const reapply = document.getElementById('reapply-btn');
   if(reapply) reapply.onclick = () => go('/apply');
+
+  document.querySelectorAll('.no-copy-link').forEach(btn => {
+    btn.onclick = () => window.open(btn.dataset.url, '_blank', 'noopener');
+  });
 }
 
 /* ---------------- Admin: login gate ---------------- */
