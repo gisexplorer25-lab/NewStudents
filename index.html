@@ -307,20 +307,12 @@ function withTimeout(p, ms = 25000){
   ]);
 }
 
-async function createUniqueRequestId(){
-  for(let i=0;i<15;i++){
-    const id = genRequestId();
-    const snap = await withTimeout(getDoc(doc(db,'requests',id)), 15000);
-    if(!snap.exists()) return id;
-  }
-  return String(Date.now()).slice(-4);
-}
-
 /**
- * ضغط الصورة لحد ~60KB: يقلل الأبعاد والجودة تدريجيًا لحد ما توصل للحجم المطلوب.
- * بترجع Data URL (نص) بيتخزن في Firestore بدل Firebase Storage.
+ * ضغط الصورة لحد ~35KB بسرعة: بيصغّر الصورة مرة واحدة بس لأبعاد صغيرة،
+ * وبعدها يجرّب درجات جودة من نفس الـ canvas (من غير إعادة رسم كل مرة).
+ * بترجع Data URL (نص) بيتخزن في Firestore.
  */
-async function compressToDataUrl(file, targetBytes = 60 * 1024){
+async function compressToDataUrl(file, targetBytes = 35 * 1024){
   const img = await new Promise((res, rej) => {
     const im = new Image();
     const url = URL.createObjectURL(file);
@@ -328,23 +320,27 @@ async function compressToDataUrl(file, targetBytes = 60 * 1024){
     im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('تعذر قراءة الصورة')); };
     im.src = url;
   });
-  let maxDim = 1000, quality = 0.55, out = '';
-  for(let i = 0; i < 14; i++){
+  const draw = (maxDim) => {
     const s = Math.min(1, maxDim / Math.max(img.width, img.height));
-    const w = Math.max(1, Math.round(img.width * s)), h = Math.max(1, Math.round(img.height * s));
     const c = document.createElement('canvas');
-    c.width = w; c.height = h;
+    c.width = Math.max(1, Math.round(img.width * s));
+    c.height = Math.max(1, Math.round(img.height * s));
     const ctx = c.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
-    ctx.drawImage(img, 0, 0, w, h);
-    out = c.toDataURL('image/jpeg', quality);
-    if(out.length * 0.75 <= targetBytes) break;
-    if(quality > 0.32) quality -= 0.08;
-    else if(maxDim > 560) maxDim = Math.round(maxDim * 0.85);
-    else break;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  };
+  const size = (u) => u.length * 0.75;
+  let out = '';
+  // محاولة 1: 800px بجودات مختلفة، محاولة 2: 640px، محاولة 3: 520px
+  for(const maxDim of [800, 640, 520]){
+    const c = draw(maxDim);
+    for(const q of [0.5, 0.4, 0.3, 0.22]){
+      out = c.toDataURL('image/jpeg', q);
+      if(size(out) <= targetBytes) return out;
+    }
   }
-  if(out.length > 850000) throw new Error('الصورة كبيرة جدًا، جرّب صورة أخرى');
-  return out;
+  return out; // أصغر نسخة (حتى لو زادت شوية عن الهدف، لسه صغيرة جدًا)
 }
 
 function fmtDate(ts){
@@ -527,27 +523,36 @@ function renderApplyForm(){
       const loaderText = document.getElementById('loader-text');
       if(loaderText) loaderText.textContent = 'جاري رفع البيانات...';
 
-      const requestId = await createUniqueRequestId();
-
-      // الصورة في collection منفصل (requestImages) عشان محدش يقدر يقراها غير الأدمن،
-      // والطلب نفسه (requests) قابل للقراءة برقم الطلب فقط بدون الصورة.
-      const batch = writeBatch(db);
-      batch.set(doc(db,'requestImages',requestId), {
-        requestId, data: imageData, createdAt: serverTimestamp()
-      });
-      batch.set(doc(db,'requests',requestId), {
-        requestId, name, phone,
-        program: PROGRAM_NAME,
-        group,
-        hasImage: true,
-        status: 'pending',
-        rejectReason: null,
-        groupLink: null,
-        reviewedBy: null,
-        reviewedAt: null,
-        createdAt: serverTimestamp()
-      });
-      await withTimeout(batch.commit(), 25000);
+      // من غير قراءة مسبقة (أسرع): لو الرقم اتكرر الـ Rules بترفض الإنشاء
+      // فبنجرّب رقم تاني تلقائيًا (لحد 4 محاولات)
+      let requestId = null, lastErr = null;
+      for(let attempt = 0; attempt < 4; attempt++){
+        const id = genRequestId();
+        const batch = writeBatch(db);
+        batch.set(doc(db,'requestImages',id), {
+          requestId: id, data: imageData, createdAt: serverTimestamp()
+        });
+        batch.set(doc(db,'requests',id), {
+          requestId: id, name, phone,
+          program: PROGRAM_NAME,
+          group,
+          hasImage: true,
+          status: 'pending',
+          rejectReason: null,
+          groupLink: null,
+          reviewedBy: null,
+          reviewedAt: null,
+          createdAt: serverTimestamp()
+        });
+        try{
+          await withTimeout(batch.commit(), 20000);
+          requestId = id; break;
+        }catch(e){
+          lastErr = e;
+          if(e.code !== 'permission-denied') throw e; // مش تكرار رقم → اعرض الخطأ
+        }
+      }
+      if(!requestId) throw lastErr || new Error('تعذر إنشاء الطلب');
 
       renderSuccess(requestId);
     }catch(err){
