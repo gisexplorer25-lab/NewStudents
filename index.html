@@ -283,15 +283,15 @@ function escapeHtml(s){
 }
 function genRequestId(){
   const n = Math.floor(1000 + Math.random()*9000);
-  return `GEOM-${YEAR}-${n}`;
+  return String(n);
 }
 async function createUniqueRequestId(){
-  for(let i=0;i<8;i++){
+  for(let i=0;i<15;i++){
     const id = genRequestId();
     const snap = await getDoc(doc(db,'requests',id));
     if(!snap.exists()) return id;
   }
-  return `GEOM-${YEAR}-${Date.now().toString().slice(-6)}`;
+  return String(Date.now()).slice(-4);
 }
 /**
  * ضغط الصورة قبل الرفع: بيقلل الأبعاد لحد أقصى ويحوّلها JPEG بجودة مضبوطة،
@@ -549,6 +549,7 @@ function renderSuccess(requestId){
       <div class="req-id-box">
         <div class="muted">رقم الطلب</div>
         <div class="num">${requestId}</div>
+        <button class="btn btn-ghost" id="copy-id-btn" style="width:auto;padding:7px 16px;margin:10px auto 0;font-size:13px">📋 نسخ الكود</button>
       </div>
       <div class="stack">
         <button class="btn btn-teal" id="go-status">متابعة حالة الطلب</button>
@@ -556,6 +557,15 @@ function renderSuccess(requestId){
       </div>
     </div>
   </div></main>`;
+  document.getElementById('copy-id-btn').onclick = async (e) => {
+    try{
+      await navigator.clipboard.writeText(requestId);
+      const btn = e.currentTarget;
+      const original = btn.textContent;
+      btn.textContent = '✓ تم النسخ';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    }catch(err){ /* clipboard غير متاح — تجاهل بصمت */ }
+  };
   document.getElementById('go-status').onclick = () => go(`/track/${requestId}`);
   document.getElementById('go-home2').onclick = () => go('/');
 }
@@ -573,7 +583,7 @@ function renderTrackLookup(){
     <div class="card">
       <div class="field">
         <label>رقم الطلب</label>
-        <input type="text" id="track-id" placeholder="مثال: GEOM-2026-1025">
+        <input type="text" id="track-id" inputmode="numeric" maxlength="4">
         <div class="err" id="track-err">لم يتم العثور على طلب بهذا الرقم</div>
       </div>
       <button class="btn btn-primary" id="track-btn">متابعة</button>
@@ -670,7 +680,7 @@ function renderAdminLogin(){
     <form class="card" id="login-form">
       <div class="field">
         <label>Username (البريد الإلكتروني)</label>
-        <input type="text" id="l-email" placeholder="admin@geomatics26.com" required>
+        <input type="text" id="l-email" required>
       </div>
       <div class="field">
         <label>Password</label>
