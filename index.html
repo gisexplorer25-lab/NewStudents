@@ -908,10 +908,15 @@ function openRequestModal(requestId){
         <b>رقم الطلب</b><span>${escapeHtml(r.requestId)}</span>
         <b>تاريخ التقديم</b><span>${fmtDate(r.createdAt)}</span>
         <b>الحالة</b><span>${statusBadge(r.status)}</span>
-        ${r.reviewedBy ? `<b>راجعها</b><span>${escapeHtml(r.reviewedBy)}</span>` : ''}
+        ${r.reviewedBy ? `<b>وقّع عليه</b><span>${escapeHtml(r.reviewedBy)}</span>` : ''}
         ${r.status==='rejected' ? `<b>سبب الرفض</b><span>${escapeHtml(r.rejectReason||'')}</span>` : ''}
       </div>
       <div id="ss-holder" class="muted center" style="margin-bottom:16px">جاري تحميل الصورة...</div>
+      <div id="reviewer-field" class="field">
+        <label>اسم المراجع (التوقيع)</label>
+        <input type="text" id="reviewer-name" placeholder="اكتب اسمك قبل القبول أو الرفض" style="direction:rtl;text-align:right">
+        <div class="err" id="err-reviewer">من فضلك اكتب اسمك أولًا</div>
+      </div>
       <div id="modal-actions" class="stack">
         <button class="btn btn-good" id="approve-btn">🟢 قبول الطلب</button>
         <button class="btn btn-bad" id="reject-btn">🔴 رفض الطلب</button>
@@ -949,11 +954,23 @@ function openRequestModal(requestId){
   const rejectBtn = document.getElementById('reject-btn');
   const rejectPanel = document.getElementById('reject-panel');
 
+  const reviewerInput = document.getElementById('reviewer-name');
+  try{ reviewerInput.value = localStorage.getItem('reviewerName') || ''; }catch(e){}
+  const getReviewer = () => {
+    const v = reviewerInput.value.trim();
+    document.getElementById('err-reviewer').classList.toggle('show', !v);
+    if(v){ try{ localStorage.setItem('reviewerName', v); }catch(e){} }
+    return v;
+  };
+
   if(r.status !== 'pending'){
+    document.getElementById('reviewer-field').classList.add('hidden');
     document.getElementById('modal-actions').innerHTML =
       `<p class="muted center">تم اتخاذ إجراء على هذا الطلب بالفعل</p>`;
   } else {
     approveBtn.onclick = async () => {
+      const reviewer = getReviewer();
+      if(!reviewer) return;
       approveBtn.disabled = true;
       try{
         const groupsDoc = await getDoc(doc(db,'meta','groupLinks'));
@@ -962,7 +979,7 @@ function openRequestModal(requestId){
           status: 'approved',
           groupLink: links[`group${r.group}`] || null,
           mainGroupLink: links.main || null,
-          reviewedBy: auth.currentUser.email,
+          reviewedBy: reviewer,
           reviewedAt: serverTimestamp()
         });
         root.innerHTML = '';
@@ -974,6 +991,8 @@ function openRequestModal(requestId){
         e.target.value === 'سبب آخر' ? 'block' : 'none';
     };
     document.getElementById('confirm-reject-btn').onclick = async () => {
+      const reviewer = getReviewer();
+      if(!reviewer) return;
       const sel = document.getElementById('reject-reason-select').value;
       const custom = document.getElementById('custom-reason').value.trim();
       const reason = sel === 'سبب آخر' ? (custom || 'سبب آخر') : sel;
@@ -981,7 +1000,7 @@ function openRequestModal(requestId){
         await updateDoc(doc(db,'requests',requestId), {
           status: 'rejected',
           rejectReason: reason,
-          reviewedBy: auth.currentUser.email,
+          reviewedBy: reviewer,
           reviewedAt: serverTimestamp()
         });
         root.innerHTML = '';
