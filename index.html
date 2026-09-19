@@ -188,6 +188,11 @@
   tbody tr:hover{background:var(--paper)}
   .table-scroll{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
   .row-btn{padding:7px 12px;font-size:12.5px;border-radius:8px;font-weight:700}
+  img.thumb{
+    width:46px;height:46px;object-fit:cover;border-radius:8px;
+    background:var(--paper-2);cursor:pointer;display:block;
+    border:1px solid var(--line);
+  }
 
   .modal-bg{
     position:fixed;inset:0;background:rgba(36,26,28,.55);
@@ -626,7 +631,10 @@ async function renderTrackStatus(requestId){
     body = `
       <p class="muted" style="margin-top:14px">المجموعة</p>
       <p style="font-weight:800;font-size:18px;margin-bottom:16px">مجموعة ${escapeHtml(d.group)}</p>
-      ${d.groupLink ? `<a href="${escapeHtml(d.groupLink)}" target="_blank" class="btn btn-good" style="text-decoration:none;display:flex">دخول جروب المجموعة</a>` : `<p class="muted">سيتم توفير رابط الجروب قريبًا</p>`}
+      <div class="stack">
+        ${d.groupLink ? `<a href="${escapeHtml(d.groupLink)}" target="_blank" class="btn btn-good" style="text-decoration:none;display:flex">دخول جروب المجموعة</a>` : `<p class="muted">سيتم توفير رابط جروب المجموعة قريبًا</p>`}
+        ${d.mainGroupLink ? `<a href="${escapeHtml(d.mainGroupLink)}" target="_blank" class="btn btn-teal" style="text-decoration:none;display:flex">دخول جروب الدفعة الأساسي</a>` : ''}
+      </div>
     `;
   } else if(d.status === 'rejected'){
     body = `
@@ -726,12 +734,7 @@ function renderAdminDashboard(user){
   <main><div class="admin-wrap">
     <div class="stats-grid" id="stats-grid"></div>
 
-    <div class="card">
-      <h3 style="margin-bottom:14px;font-size:16px">إدارة روابط الجروبات</h3>
-      <div class="groups-grid" id="groups-grid"></div>
-      <button class="btn btn-teal" id="save-groups" style="margin-top:14px;width:auto;padding:10px 20px">حفظ الروابط</button>
-      <span class="muted" id="groups-saved" style="margin-right:10px;display:none">✓ تم الحفظ</span>
-    </div>
+    <button class="btn btn-teal" id="open-groups-btn" style="width:auto;padding:12px 22px;margin-bottom:16px">🔗 روابط الجروبات (الـ6 مجموعات + جروب الدفعة الأساسي)</button>
 
     <div class="card">
       <div class="toolbar">
@@ -750,7 +753,7 @@ function renderAdminDashboard(user){
       <div class="table-scroll">
         <table>
           <thead><tr>
-            <th>رقم الطلب</th><th>اسم الطالب</th><th>المجموعة</th><th>واتساب</th><th>الحالة</th><th>التاريخ</th><th>الإجراء</th>
+            <th>Screenshot</th><th>رقم الطلب</th><th>اسم الطالب</th><th>واتساب</th><th>المجموعة</th><th>الحالة</th><th>التوقيع</th><th>التاريخ</th><th>الإجراء</th>
           </tr></thead>
           <tbody id="req-tbody"></tbody>
         </table>
@@ -766,7 +769,7 @@ function renderAdminDashboard(user){
     renderAdminGate();
   };
 
-  loadGroupsPanel();
+  document.getElementById('open-groups-btn').onclick = openGroupsModal;
 
   const q = query(collection(db,'requests'), orderBy('createdAt','desc'));
   unsubRequests = onSnapshot(q, (snap) => {
@@ -776,7 +779,7 @@ function renderAdminDashboard(user){
   }, (err) => {
     console.error(err);
     document.getElementById('req-tbody').innerHTML =
-      `<tr><td colspan="7" class="center muted">تعذر تحميل الطلبات (${escapeHtml(err.message||'')})</td></tr>`;
+      `<tr><td colspan="9" class="center muted">تعذر تحميل الطلبات (${escapeHtml(err.message||'')})</td></tr>`;
   });
 
   document.getElementById('search-box').oninput = renderTable;
@@ -815,19 +818,39 @@ function renderTable(){
 
   document.getElementById('req-tbody').innerHTML = rows.length ? rows.map(r => `
     <tr>
+      <td><img class="thumb" id="thumb-${escapeHtml(r.requestId)}" data-id="${escapeHtml(r.requestId)}" alt="Screenshot"></td>
       <td>${escapeHtml(r.requestId)}</td>
       <td>${escapeHtml(r.name)}</td>
-      <td>مجموعة ${escapeHtml(r.group)}</td>
       <td>${escapeHtml(r.phone)}</td>
+      <td>مجموعة ${escapeHtml(r.group)}</td>
       <td>${statusBadge(r.status)}</td>
+      <td>${r.reviewedBy ? escapeHtml(r.reviewedBy) : '<span class="muted">—</span>'}</td>
       <td>${fmtDate(r.createdAt)}</td>
       <td><button class="row-btn btn-teal" data-id="${escapeHtml(r.requestId)}">فتح</button></td>
     </tr>
-  `).join('') : `<tr><td colspan="7" class="center muted" style="padding:24px">لا توجد طلبات مطابقة</td></tr>`;
+  `).join('') : `<tr><td colspan="9" class="center muted" style="padding:24px">لا توجد طلبات مطابقة</td></tr>`;
 
   document.querySelectorAll('#req-tbody button[data-id]').forEach(btn => {
     btn.onclick = () => openRequestModal(btn.dataset.id);
   });
+  document.querySelectorAll('#req-tbody img.thumb').forEach(img => {
+    img.onclick = () => openRequestModal(img.dataset.id);
+    loadThumb(img.dataset.id);
+  });
+}
+
+const thumbCache = {};
+function loadThumb(requestId){
+  const img = document.getElementById(`thumb-${requestId}`);
+  if(!img) return;
+  if(thumbCache[requestId]){ img.src = thumbCache[requestId]; return; }
+  const r = allRequests.find(x => x.requestId === requestId);
+  if(!r || !r.screenshotPath) return;
+  getDownloadURL(ref(storage, r.screenshotPath)).then(url => {
+    thumbCache[requestId] = url;
+    const el = document.getElementById(`thumb-${requestId}`);
+    if(el) el.src = url;
+  }).catch(() => {});
 }
 
 function openRequestModal(requestId){
@@ -904,6 +927,7 @@ function openRequestModal(requestId){
         await updateDoc(doc(db,'requests',requestId), {
           status: 'approved',
           groupLink: links[`group${r.group}`] || null,
+          mainGroupLink: links.main || null,
           reviewedBy: auth.currentUser.email,
           reviewedAt: serverTimestamp()
         });
@@ -932,12 +956,33 @@ function openRequestModal(requestId){
   }
 }
 
-async function loadGroupsPanel(){
+async function openGroupsModal(){
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+  <div class="modal-bg" id="groups-modal-bg">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 style="font-size:17px">روابط الجروبات</h3>
+        <button class="close-x" id="groups-modal-close">✕</button>
+      </div>
+      <div class="field">
+        <label>رابط جروب الدفعة الأساسي (للكل)</label>
+        <input type="text" id="group-link-main">
+      </div>
+      <div class="groups-grid" id="groups-grid"></div>
+      <button class="btn btn-teal" id="save-groups" style="margin-top:16px">حفظ الروابط</button>
+      <span class="muted" id="groups-saved" style="display:none;margin-top:8px" class="center">✓ تم الحفظ</span>
+    </div>
+  </div>`;
+
+  document.getElementById('groups-modal-close').onclick = () => root.innerHTML = '';
+  document.getElementById('groups-modal-bg').onclick = (e) => { if(e.target.id === 'groups-modal-bg') root.innerHTML=''; };
+
   const grid = document.getElementById('groups-grid');
   grid.innerHTML = GROUPS.map(g => `
     <div class="group-row">
       <label>مجموعة ${g}</label>
-      <input type="text" id="group-link-${g}" placeholder="رابط جروب مجموعة ${g}">
+      <input type="text" id="group-link-${g}">
     </div>
   `).join('');
 
@@ -945,6 +990,8 @@ async function loadGroupsPanel(){
     const snap = await getDoc(doc(db,'meta','groupLinks'));
     if(snap.exists()){
       const data = snap.data();
+      const mainEl = document.getElementById('group-link-main');
+      if(mainEl && data.main) mainEl.value = data.main;
       GROUPS.forEach(g => {
         const el = document.getElementById(`group-link-${g}`);
         if(el && data[`group${g}`]) el.value = data[`group${g}`];
@@ -953,12 +1000,12 @@ async function loadGroupsPanel(){
   }catch(e){ console.error(e); }
 
   document.getElementById('save-groups').onclick = async () => {
-    const payload = {};
+    const payload = { main: document.getElementById('group-link-main').value.trim() };
     GROUPS.forEach(g => { payload[`group${g}`] = document.getElementById(`group-link-${g}`).value.trim(); });
     try{
       await setDoc(doc(db,'meta','groupLinks'), payload, { merge:true });
       const saved = document.getElementById('groups-saved');
-      saved.style.display = 'inline';
+      saved.style.display = 'block';
       setTimeout(()=>saved.style.display='none', 2000);
     }catch(e){ alert('حدث خطأ أثناء الحفظ: ' + e.message); }
   };
