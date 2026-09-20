@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>برنامج المساحة ونظم المعلومات الجغرافية — تسجيل دفعة 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --maroon:#6E1E2A;
+    --maroon-dark:#4E1420;
+    --maroon-light:#8E2E3D;
+    --ink:#241A1C;
+    --paper:#FAF7F2;
+    --paper-2:#F1EBE1;
+    --line:#E3D9C8;
+    --teal:#1F6F78;
+    --teal-dark:#144F56;
+    --good:#2E7D4F;
+    --good-bg:#E7F4EC;
+    --warn:#C98A1A;
+    --warn-bg:#FBF1DF;
+    --bad:#B23A3A;
+    --bad-bg:#FAEAEA;
+    --radius:14px;
+    --shadow:0 6px 24px rgba(78,20,32,.10);
+  }
+  *{box-sizing:border-box}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{
+    margin:0;
+    font-family:'Tajawal',sans-serif;
+    background:
+      linear-gradient(var(--paper),var(--paper)),
+      repeating-linear-gradient(0deg, rgba(110,30,42,.05) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(90deg, rgba(110,30,42,.05) 0 1px, transparent 1px 42px);
+    background-attachment:fixed;
+    color:var(--ink);
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    min-height:100%;
+  }
+  h1,h2,h3{margin:0;font-weight:800;line-height:1.25}
+  p{margin:0;line-height:1.7}
+  button{font-family:inherit;cursor:pointer;border:none}
+  input,select,textarea{font-family:inherit}
+  a{color:inherit}
+
+  .topo{
+    position:absolute;inset:0;z-index:0;opacity:.16;pointer-events:none;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 18px}
+  .admin-wrap{max-width:1100px;margin:0 auto;padding:0 18px}
+
+  header.hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(180deg,var(--maroon) 0%,var(--maroon-dark) 100%);
+    color:#fff;padding:38px 0 30px;
+  }
+  header.hero .wrap{position:relative;z-index:1}
+  .eyebrow-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.28);
+    color:#fff;font-size:13px;font-weight:500;
+    padding:6px 14px;border-radius:999px;margin-bottom:16px;
+  }
+  header.hero h1{font-size:26px;margin-bottom:8px}
+  header.hero .sub{font-size:15px;opacity:.9;font-weight:500}
+  .coords{
+    font-family:'Tajawal',monospace;font-size:12px;letter-spacing:.4px;
+    color:rgba(255,255,255,.72);margin-top:10px;display:flex;align-items:center;gap:6px;
+  }
+  .compass-rose{
+    position:absolute;top:14px;left:14px;width:54px;height:54px;opacity:.5;z-index:1;
+  }
+  .sat-track{
+    position:absolute;top:8px;right:-20px;width:160px;height:160px;opacity:.35;z-index:0;
+    pointer-events:none;
+  }
+
+  main{padding:22px 0 60px}
+  .card{
+    background:#fff;border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:22px;margin-bottom:16px;
+  }
+  .welcome p{font-size:15.5px;color:#4a3a3d;margin-bottom:10px}
+  .welcome p:last-child{margin-bottom:0}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:15px 18px;border-radius:12px;
+    font-size:16px;font-weight:700;transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--maroon);color:#fff;box-shadow:0 4px 14px rgba(110,30,42,.28)}
+  .btn-secondary{background:#fff;color:var(--maroon);border:1.5px solid var(--maroon)}
+  .btn-teal{background:var(--teal);color:#fff}
+  .btn-good{background:var(--good);color:#fff}
+  .btn-bad{background:#fff;color:var(--bad);border:1.5px solid var(--bad)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .btn:disabled{opacity:.55;pointer-events:none}
+  .no-copy-link{
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    -webkit-user-drag:none;
+  }
+  .stack{display:flex;flex-direction:column;gap:12px}
+
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:14px;font-weight:700;margin-bottom:6px;color:var(--maroon-dark)}
+  .field .hint{font-size:12.5px;color:#8a7a7d;margin-top:5px}
+  .field input[type=text], .field input[type=tel], .field input[type=password], .field select{
+    width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:10px;
+    font-size:15px;background:var(--paper);color:var(--ink);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:none;border-color:var(--teal);background:#fff;
+  }
+  .upload-box{
+    border:2px dashed var(--line);border-radius:12px;padding:22px 14px;
+    text-align:center;background:var(--paper);cursor:pointer;
+  }
+  .upload-box.has-file{border-color:var(--teal);background:#EFF7F7}
+  .upload-box input{display:none}
+  .upload-preview{max-width:100%;max-height:220px;border-radius:8px;margin-top:12px}
+  .checkline{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#4a3a3d}
+  .checkline input{margin-top:3px;width:18px;height:18px;accent-color:var(--maroon)}
+  .err{color:var(--bad);font-size:13px;margin-top:6px;display:none}
+  .err.show{display:block}
+
+  .status-badge{
+    display:inline-flex;align-items:center;gap:8px;padding:8px 16px;
+    border-radius:999px;font-weight:700;font-size:14.5px;
+  }
+  .status-pending{background:var(--warn-bg);color:var(--warn)}
+  .status-approved{background:var(--good-bg);color:var(--good)}
+  .status-rejected{background:var(--bad-bg);color:var(--bad)}
+
+  .req-id-box{
+    background:var(--paper-2);border:1.5px dashed var(--maroon-light);
+    border-radius:12px;padding:18px;text-align:center;margin:16px 0;
+  }
+  .req-id-box .num{font-size:24px;font-weight:900;color:var(--maroon);letter-spacing:1px;margin-top:6px}
+
+  .loader{
+    display:flex;flex-direction:column;align-items:center;gap:16px;padding:50px 0;
+  }
+  .spinner{
+    width:44px;height:44px;border-radius:50%;
+    border:4px solid var(--line);border-top-color:var(--maroon);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 0;
+  }
+  .link-btn{background:none;color:var(--teal);font-weight:700;font-size:14px}
+
+  /* Admin */
+  .admin-header{
+    background:var(--maroon-dark);color:#fff;padding:16px 0;
+    padding-top:calc(16px + env(safe-area-inset-top,0px));
+  }
+  .admin-header .row{display:flex;align-items:center;justify-content:space-between}
+  .admin-header h1{font-size:17px}
+  .admin-header .who{font-size:12.5px;opacity:.8}
+  .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}
+  @media(min-width:720px){.stats-grid{grid-template-columns:repeat(5,1fr)}}
+  .stat-card{
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;
+  }
+  .stat-card .n{font-size:24px;font-weight:900;color:var(--maroon)}
+  .stat-card .l{font-size:12.5px;color:#8a7a7d;font-weight:600}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .toolbar input, .toolbar select{
+    padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:#fff;
+  }
+  .toolbar input{flex:1;min-width:160px}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{
+    text-align:right;padding:10px;background:var(--paper-2);
+    font-weight:700;color:var(--maroon-dark);white-space:nowrap;
+  }
+  tbody td{padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody tr:hover{background:var(--paper)}
+  .table-scroll{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
+  .row-btn{padding:7px 12px;font-size:12.5px;border-radius:8px;font-weight:700}
+  img.thumb{
+    width:46px;height:46px;object-fit:cover;border-radius:8px;
+    background:var(--paper-2);cursor:pointer;display:block;
+    border:1px solid var(--line);
+  }
+
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(36,26,28,.55);
+    display:flex;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  @media(min-width:720px){.modal-bg{align-items:center}}
+  .modal{
+    background:#fff;border-radius:18px 18px 0 0;max-width:560px;width:100%;
+    max-height:92vh;overflow-y:auto;padding:22px;
+  }
+  @media(min-width:720px){.modal{border-radius:18px}}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .close-x{background:var(--paper-2);width:32px;height:32px;border-radius:50%;font-size:16px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:14.5px;margin-bottom:16px}
+  .kv b{color:var(--maroon-dark);font-weight:700}
+  .ss-img{width:100%;border-radius:10px;border:1px solid var(--line);margin-bottom:16px}
+  .groups-grid{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:600px){.groups-grid{grid-template-columns:1fr 1fr}}
+  .group-row{display:flex;gap:8px;align-items:center}
+  .group-row label{font-weight:700;font-size:13px;min-width:64px}
+  .group-row input{
+    flex:1;min-width:0;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;
+    font-size:14px;background:var(--paper);
+  }
+  .modal .field input[type=text]{direction:ltr;text-align:left}
+
+  .hidden{display:none !important}
+  .center{text-align:center}
+  .muted{color:#8a7a7d;font-size:13px}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  initializeFirestore, collection, doc, getDoc, setDoc, updateDoc, query, orderBy,
+  onSnapshot, serverTimestamp, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+/* =========================================================
+   1) إعدادات Firebase
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyC8dTvOqQOzM8mKzrUG0hymKaYMLCK_fWo",
+  authDomain: "studypro-85a33.firebaseapp.com",
+  databaseURL: "https://studypro-85a33-default-rtdb.firebaseio.com",
+  projectId: "studypro-85a33",
+  storageBucket: "studypro-85a33.firebasestorage.app",
+  messagingSenderId: "725636775230",
+  appId: "1:725636775230:web:01f1445d9d95699152006f",
+  measurementId: "G-1H1LH2MF0J"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+// experimentalAutoDetectLongPolling: بيحل مشكلة التحميل اللانهائي على الشبكات/المتصفحات
+// اللي بتمنع اتصال WebChannel العادي (شائعة على بعض شبكات الموبايل والـ in-app browsers)
+const db = initializeFirestore(fbApp, { experimentalAutoDetectLongPolling: true });
+const auth = getAuth(fbApp);
+
+const PROGRAM_NAME = "برنامج المساحة ونظم المعلومات الجغرافية والاستشعار عن بعد";
+const YEAR = "2026";
+const GROUPS = ["1","2","3","4","5","6"];
+const UNKNOWN_GROUP = "unknown"; // الطالب لسه معرفش مجموعته
+const groupLabel = (g) => g === UNKNOWN_GROUP ? 'لم تُحدَّد بعد' : `مجموعة ${g}`;
+const REJECT_REASONS = [
+  "Screenshot غير واضح",
+  "بيانات غير مطابقة",
+  "المجموعة غير واضحة",
+  "إثبات القبول غير موجود",
+  "كود المصاريف غير واضح",
+  "سبب آخر"
+];
+
+const app = document.getElementById('app');
+
+/* ---------------- Router ---------------- */
+function route(){
+  const hash = location.hash.replace('#','') || '/';
+  if(hash === '/') renderHome();
+  else if(hash === '/apply') renderApplyForm();
+  else if(hash === '/track') renderTrackLookup();
+  else if(hash.startsWith('/track/')) renderTrackStatus(hash.split('/')[2]);
+  else if(hash === '/admin') renderAdminGate();
+  else renderHome();
+}
+window.addEventListener('hashchange', route);
+function go(path){ location.hash = path; }
+
+/* ---------------- Helpers ---------------- */
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+/** يحوّل الأرقام العربية (٠١٢٣...) لإنجليزية عشان رقم التليفون/الطلب يتقرا صح */
+function toEnDigits(str){
+  return String(str ?? '')
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+}
+function genRequestId(){
+  const n = Math.floor(1000 + Math.random()*9000);
+  return String(n);
+}
+
+/** يمنع التعليق للأبد: لو العملية اتأخرت أكتر من المهلة بيطلع خطأ واضح */
+function withTimeout(p, ms = 25000){
+  return Promise.race([
+    p,
+    new Promise((_, rej) => setTimeout(
+      () => rej(new Error('انتهت مهلة الاتصال، تأكد من الإنترنت وحاول تاني')), ms))
+  ]);
+}
+
+/**
+ * ضغط الصورة لحد ~140KB مع الحفاظ على وضوح النص:
+ * التصغير بيتم على أساس العرض والطول مع بعض (مش أطول ضلع بس)، لأن الـ Screenshot
+ * غالبًا طويل، فلو صغّرنا على أساس الطول بس العرض بيبقى ضيق والكلام يتبكسل.
+ * بنبدأ بأعلى جودة ونقلل تدريجيًا لحد ما نوصل للحجم المطلوب.
+ */
+async function compressToDataUrl(file, targetBytes = 140 * 1024){
+  const img = await new Promise((res, rej) => {
+    const im = new Image();
+    const url = URL.createObjectURL(file);
+    im.onload = () => { URL.revokeObjectURL(url); res(im); };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('تعذر قراءة الصورة')); };
+    im.src = url;
+  });
+  const draw = (maxW, maxH) => {
+    const s = Math.min(1, maxW / img.width, maxH / img.height);
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.width * s));
+    c.height = Math.max(1, Math.round(img.height * s));
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  };
+  const size = (u) => u.length * 0.75;
+  let out = '';
+  for(const [maxW, maxH] of [[1080,2200],[960,1900],[840,1700],[720,1500],[600,1250]]){
+    const c = draw(maxW, maxH);
+    for(const q of [0.72, 0.62, 0.52, 0.42]){
+      out = c.toDataURL('image/jpeg', q);
+      if(size(out) <= targetBytes) return out;
+    }
+  }
+  return out;
+}
+
+function fmtDate(ts){
+  if(!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' });
+}
+function statusBadge(status){
+  if(status==='approved') return `<span class="status-badge status-approved">🟢 تم القبول</span>`;
+  if(status==='rejected') return `<span class="status-badge status-rejected">🔴 مرفوض</span>`;
+  return `<span class="status-badge status-pending">🟡 قيد المراجعة</span>`;
+}
+
+function topoSvg(){
+  return `<svg class="topo" viewBox="0 0 400 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,150 Q100,100 200,150 T400,140" fill="none" stroke="white" stroke-width="1"/>
+    <path d="M0,170 Q100,120 200,170 T400,160" fill="none" stroke="white" stroke-width="1"/>
+    <path d="M0,190 Q100,140 200,190 T400,180" fill="none" stroke="white" stroke-width="1"/>
+    <path d="M0,40 Q100,10 200,40 T400,30" fill="none" stroke="white" stroke-width="1"/>
+    <path d="M0,20 Q100,-10 200,20 T400,10" fill="none" stroke="white" stroke-width="1"/>
+    <g stroke="white" stroke-width=".6" opacity=".5">
+      <line x1="0" y1="0" x2="0" y2="200"/><line x1="80" y1="0" x2="80" y2="200"/>
+      <line x1="160" y1="0" x2="160" y2="200"/><line x1="240" y1="0" x2="240" y2="200"/>
+      <line x1="320" y1="0" x2="320" y2="200"/><line x1="400" y1="0" x2="400" y2="200"/>
+    </g>
+  </svg>`;
+}
+
+function compassRoseSvg(){
+  return `<svg class="compass-rose" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="44" fill="none" stroke="white" stroke-width="1.4"/>
+    <circle cx="50" cy="50" r="2.5" fill="white"/>
+    <path d="M50,8 L57,50 L50,92 L43,50 Z" fill="white" opacity=".9"/>
+    <path d="M8,50 L50,43 L92,50 L50,57 Z" fill="white" opacity=".5"/>
+    <text x="50" y="12" text-anchor="middle" fill="white" font-size="11" font-weight="700">N</text>
+  </svg>`;
+}
+
+function satTrackSvg(){
+  return `<svg class="sat-track" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="80" cy="80" rx="70" ry="30" fill="none" stroke="white" stroke-width="1" transform="rotate(-18 80 80)"/>
+    <circle cx="146" cy="58" r="3.2" fill="white"/>
+    <circle cx="80" cy="80" r="1.6" fill="white"/>
+  </svg>`;
+}
+
+/* ---------------- Home ---------------- */
+function renderHome(){
+  app.innerHTML = `
+  <header class="hero">
+    ${topoSvg()}${compassRoseSvg()}${satTrackSvg()}
+    <div class="wrap">
+      <span class="eyebrow-badge">🛰️ كلية الآداب — جامعة القاهرة</span>
+      <h1>${PROGRAM_NAME}</h1>
+      <p class="sub">تسجيل طلاب الدفعة الجديدة ${YEAR}</p>
+      <p class="coords">⌖ 30.0444°N, 31.2357°E — القاهرة</p>
+    </div>
+  </header>
+  <main>
+    <div class="wrap">
+      <div class="card welcome">
+        <p>أهلًا بطلاب الدفعة الجديدة 👋</p>
+        <p>من فضلك قم بإدخال بياناتك ورفع Screenshot يثبت قبولك في مقابلة القسم ويوضح المجموعة الخاصة بك.</p>
+        <p>بعد مراجعة الطلب من فريق الإرشاد سيتم إتاحة رابط جروب الدفعة لك.</p>
+      </div>
+      <div class="stack">
+        <button class="btn btn-primary" id="go-apply">تقديم طلب الانضمام</button>
+        <button class="btn btn-secondary" id="go-track">متابعة طلب سابق</button>
+      </div>
+      <p class="muted center" style="margin-top:22px">فريق الإرشاد؟ <a href="#/admin" style="color:var(--teal);font-weight:700">تسجيل الدخول من هنا</a></p>
+    </div>
+  </main>`;
+  document.getElementById('go-apply').onclick = () => go('/apply');
+  document.getElementById('go-track').onclick = () => go('/track');
+}
+
+/* ---------------- Apply form ---------------- */
+function renderApplyForm(){
+  app.innerHTML = `
+  <header class="hero" style="padding:22px 0">
+    <div class="wrap topbar">
+      <button class="link-btn" id="back-home">→ رجوع</button>
+      <span style="font-weight:700;font-size:14px">تقديم طلب الانضمام</span>
+    </div>
+  </header>
+  <main><div class="wrap">
+    <form class="card" id="apply-form" novalidate>
+      <div class="field">
+        <label>الاسم ثلاثي</label>
+        <input type="text" id="f-name" placeholder="مثال: أحمد محمد علي" required>
+        <div class="err" id="err-name">من فضلك أدخل الاسم ثلاثيًا</div>
+      </div>
+      <div class="field">
+        <label>رقم الواتساب</label>
+        <input type="tel" id="f-phone" placeholder="01xxxxxxxxx" required>
+        <div class="err" id="err-phone">من فضلك أدخل رقم واتساب صحيح</div>
+      </div>
+      <div class="field">
+        <label>رقم المجموعة</label>
+        <select id="f-group" required>
+          <option value="">اختر المجموعة</option>
+          ${GROUPS.map(g=>`<option value="${g}">مجموعة ${g}</option>`).join('')}
+          <option value="${UNKNOWN_GROUP}">لسه معرفش مجموعتي</option>
+        </select>
+        <div class="hint">لو لسه مجموعتك متحددتش اختار "لسه معرفش مجموعتي" وهيظهرلك جروب الدفعة الأساسي بس.</div>
+        <div class="err" id="err-group">من فضلك اختر المجموعة</div>
+      </div>
+
+      <div class="field">
+        <label>إثبات القبول (Screenshot)</label>
+        <p class="hint" style="margin-bottom:8px">صورة توضح قبولك في مقابلة القسم، والمجموعة، والبيانات المطلوبة للتحقق. JPG / PNG / WEBP — بحد أقصى 10MB (بيتم ضغطها تلقائيًا).</p>
+        <label class="upload-box" id="upload-box">
+          <input type="file" id="f-file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+          <div id="upload-placeholder">📷 اضغط لاختيار الصورة</div>
+          <img id="upload-preview" class="upload-preview hidden">
+        </label>
+        <div class="err" id="err-file">من فضلك ارفع صورة بصيغة وحجم صحيحين</div>
+      </div>
+
+      <div class="field">
+        <label class="checkline">
+          <input type="checkbox" id="f-confirm">
+          <span>أقر بأن البيانات التي أدخلتها صحيحة وأن Screenshot المرفوع يخصني.</span>
+        </label>
+        <div class="err" id="err-confirm">من فضلك أكّد إقرارك قبل الإرسال</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="submit-btn">إرسال الطلب</button>
+    </form>
+  </div></main>`;
+
+  document.getElementById('back-home').onclick = () => go('/');
+
+  const fileInput = document.getElementById('f-file');
+  const uploadBox = document.getElementById('upload-box');
+  const preview = document.getElementById('upload-preview');
+  const placeholder = document.getElementById('upload-placeholder');
+  let selectedFile = null;
+
+  fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if(!file) return;
+    const okType = ['image/jpeg','image/png','image/webp'].includes(file.type);
+    const okSize = file.size <= 10*1024*1024;
+    if(!okType || !okSize){
+      document.getElementById('err-file').classList.add('show');
+      selectedFile = null;
+      return;
+    }
+    document.getElementById('err-file').classList.remove('show');
+    selectedFile = file;
+    uploadBox.classList.add('has-file');
+    placeholder.classList.add('hidden');
+    preview.classList.remove('hidden');
+    preview.src = URL.createObjectURL(file);
+  };
+
+  document.getElementById('apply-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('f-name').value.trim();
+    const phone = toEnDigits(document.getElementById('f-phone').value.trim());
+    const group = document.getElementById('f-group').value;
+    const confirmed = document.getElementById('f-confirm').checked;
+
+    let valid = true;
+    const setErr = (id, cond) => { document.getElementById(id).classList.toggle('show', cond); if(cond) valid=false; };
+    setErr('err-name', name.split(/\s+/).filter(Boolean).length < 3);
+    setErr('err-phone', !/^01[0-9]{9}$/.test(phone));
+    setErr('err-group', !group);
+    setErr('err-file', !selectedFile);
+    setErr('err-confirm', !confirmed);
+    if(!valid) return;
+
+    document.getElementById('submit-btn').disabled = true;
+    app.innerHTML = `<main><div class="wrap"><div class="loader">
+      <div class="spinner"></div>
+      <p style="font-weight:700" id="loader-text">جاري تجهيز الصورة...</p>
+    </div></div></main>`;
+
+    try{
+      const imageData = await compressToDataUrl(selectedFile);
+      const loaderText = document.getElementById('loader-text');
+      if(loaderText) loaderText.textContent = 'جاري رفع البيانات...';
+
+      // من غير قراءة مسبقة (أسرع): لو الرقم اتكرر الـ Rules بترفض الإنشاء
+      // فبنجرّب رقم تاني تلقائيًا (لحد 4 محاولات)
+      let requestId = null, lastErr = null;
+      for(let attempt = 0; attempt < 4; attempt++){
+        const id = genRequestId();
+        const batch = writeBatch(db);
+        batch.set(doc(db,'requestImages',id), {
+          requestId: id, data: imageData, createdAt: serverTimestamp()
+        });
+        batch.set(doc(db,'requests',id), {
+          requestId: id, name, phone,
+          program: PROGRAM_NAME,
+          group,
+          hasImage: true,
+          status: 'pending',
+          rejectReason: null,
+          groupLink: null,
+          reviewedBy: null,
+          reviewedAt: null,
+          createdAt: serverTimestamp()
+        });
+        // فهرس بسيط (رقم التليفون → رقم الطلب) عشان الطالب يقدر يستعلم بالتليفون لو نسي رقم الطلب
+        batch.set(doc(db,'phoneIndex',phone), { requestId: id, phone });
+        try{
+          await withTimeout(batch.commit(), 20000);
+          requestId = id; break;
+        }catch(e){
+          lastErr = e;
+          if(e.code !== 'permission-denied') throw e; // مش تكرار رقم → اعرض الخطأ
+          // هل السبب إن الرقم ده مسجل بطلب لسه شغال (مش مرفوض)؟
+          try{
+            const pi = await getDoc(doc(db,'phoneIndex',phone));
+            if(pi.exists()){
+              const rs = await getDoc(doc(db,'requests',pi.data().requestId));
+              if(rs.exists() && rs.data().status !== 'rejected'){
+                const dup = new Error(`رقم الواتساب ده مسجل بالفعل برقم طلب ${pi.data().requestId}. استخدم "متابعة طلب سابق" لمعرفة حالته.`);
+                dup.dup = true;
+                throw dup;
+              }
+            }
+          }catch(inner){ if(inner.dup) throw inner; }
+        }
+      }
+      if(!requestId) throw lastErr || new Error('تعذر إنشاء الطلب');
+
+      renderSuccess(requestId);
+    }catch(err){
+      console.error(err);
+      app.innerHTML = `<main><div class="wrap"><div class="card center">
+        <p style="font-weight:700;color:var(--bad)">حدث خطأ أثناء إرسال الطلب</p>
+        <p class="muted" style="margin-top:8px">${escapeHtml(err.message || '')}</p>
+        <button class="btn btn-secondary" style="margin-top:16px" onclick="location.hash='#/apply'">إعادة المحاولة</button>
+      </div></div></main>`;
+    }
+  };
+}
+
+function renderSuccess(requestId){
+  app.innerHTML = `
+  <main style="padding-top:60px"><div class="wrap">
+    <div class="card center">
+      <div style="font-size:44px;margin-bottom:6px">✅</div>
+      <h2 style="font-size:20px;margin-bottom:4px">تم إرسال طلبك بنجاح</h2>
+      <p class="muted" style="margin-top:8px">احتفظ برقم الطلب لمتابعة حالة طلبك لاحقًا</p>
+      <div class="req-id-box">
+        <div class="muted">رقم الطلب</div>
+        <div class="num">${requestId}</div>
+        <button class="btn btn-ghost" id="copy-id-btn" style="width:auto;padding:7px 16px;margin:10px auto 0;font-size:13px">📋 نسخ الكود</button>
+      </div>
+      <div class="stack">
+        <button class="btn btn-teal" id="go-status">متابعة حالة الطلب</button>
+        <button class="btn btn-ghost" id="go-home2">العودة للرئيسية</button>
+      </div>
+    </div>
+  </div></main>`;
+  document.getElementById('copy-id-btn').onclick = async (e) => {
+    try{
+      await navigator.clipboard.writeText(requestId);
+      const btn = e.currentTarget;
+      const original = btn.textContent;
+      btn.textContent = '✓ تم النسخ';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    }catch(err){ /* clipboard غير متاح — تجاهل بصمت */ }
+  };
+  document.getElementById('go-status').onclick = () => go(`/track/${requestId}`);
+  document.getElementById('go-home2').onclick = () => go('/');
+}
+
+/* ---------------- Track ---------------- */
+function renderTrackLookup(){
+  app.innerHTML = `
+  <header class="hero" style="padding:22px 0">
+    <div class="wrap topbar">
+      <button class="link-btn" id="back-home">→ رجوع</button>
+      <span style="font-weight:700;font-size:14px">متابعة طلب سابق</span>
+    </div>
+  </header>
+  <main><div class="wrap">
+    <div class="card">
+      <div class="field">
+        <label>رقم الطلب أو رقم الواتساب</label>
+        <input type="text" id="track-id" inputmode="numeric" maxlength="11" placeholder="رقم الطلب (4 أرقام) أو رقم الواتساب اللي سجلت بيه">
+        <div class="hint">لو نسيت رقم الطلب اكتب رقم الواتساب اللي سجّلت بيه.</div>
+        <div class="err" id="track-err">لم يتم العثور على طلب بهذا الرقم</div>
+      </div>
+      <button class="btn btn-primary" id="track-btn">متابعة</button>
+    </div>
+  </div></main>`;
+  document.getElementById('back-home').onclick = () => go('/');
+  const doTrack = async () => {
+    const val = toEnDigits(document.getElementById('track-id').value.trim());
+    const errEl = document.getElementById('track-err');
+    const btn = document.getElementById('track-btn');
+    errEl.classList.remove('show');
+    if(!val) return;
+    if(/^01[0-9]{9}$/.test(val)){
+      btn.disabled = true;
+      try{
+        const snap = await withTimeout(getDoc(doc(db,'phoneIndex',val)), 15000);
+        if(snap.exists()){ go(`/track/${snap.data().requestId}`); return; }
+        errEl.textContent = 'لم يتم العثور على طلب بهذا الرقم';
+      }catch(e){
+        errEl.textContent = 'تعذر الاستعلام، تأكد من الإنترنت وحاول تاني';
+      }
+      errEl.classList.add('show');
+      btn.disabled = false;
+    } else {
+      go(`/track/${val}`);
+    }
+  };
+  document.getElementById('track-btn').onclick = doTrack;
+  document.getElementById('track-id').onkeydown = (e) => { if(e.key === 'Enter') doTrack(); };
+}
+
+async function renderTrackStatus(requestId){
+  app.innerHTML = `<main><div class="wrap"><div class="loader"><div class="spinner"></div></div></div></main>`;
+  let snap;
+  try{ snap = await withTimeout(getDoc(doc(db,'requests',requestId)), 15000); }
+  catch(e){ snap = null; }
+
+  if(!snap || !snap.exists()){
+    app.innerHTML = `
+    <header class="hero" style="padding:22px 0">
+      <div class="wrap topbar">
+        <button class="link-btn" id="back-track">→ رجوع</button>
+        <span style="font-weight:700;font-size:14px">متابعة الطلب</span>
+      </div>
+    </header>
+    <main><div class="wrap"><div class="card center">
+      <p style="font-weight:700;color:var(--bad)">لم يتم العثور على طلب بهذا الرقم</p>
+      <p class="muted" style="margin-top:8px">تأكد من رقم الطلب وحاول مرة أخرى</p>
+      <button class="btn btn-secondary" style="margin-top:16px" onclick="location.hash='#/track'">حاول مرة أخرى</button>
+    </div></div></main>`;
+    document.getElementById('back-track').onclick = () => go('/track');
+    return;
+  }
+
+  const d = snap.data();
+  let body = '';
+  if(d.status === 'approved'){
+    const noGroup = d.group === UNKNOWN_GROUP;
+    const groupBtn = noGroup ? '' : d.groupLink
+      ? `<button type="button" class="btn btn-good no-copy-link" data-url="${escapeHtml(d.groupLink)}" oncontextmenu="return false">دخول جروب المجموعة</button>`
+      : `<p class="muted">سيتم توفير رابط جروب المجموعة قريبًا</p>`;
+    const mainBtn = d.mainGroupLink
+      ? `<button type="button" class="btn btn-teal no-copy-link" data-url="${escapeHtml(d.mainGroupLink)}" oncontextmenu="return false">دخول جروب الدفعة الأساسي</button>`
+      : '';
+    body = `
+      <p class="muted" style="margin-top:14px">المجموعة</p>
+      <p style="font-weight:800;font-size:18px;margin-bottom:16px">${noGroup ? 'لم تُحدَّد بعد' : 'مجموعة ' + escapeHtml(d.group)}</p>
+      <div class="stack" oncopy="return false" oncut="return false" oncontextmenu="return false">
+        ${groupBtn}
+        ${mainBtn || (noGroup ? '<p class="muted">سيتم توفير رابط جروب الدفعة قريبًا</p>' : '')}
+      </div>
+      <p class="muted" style="margin-top:12px;font-size:12.5px">اضغط على الزر للدخول مباشرة — الرابط غير قابل للنسخ أو المشاركة.</p>
+    `;
+  } else if(d.status === 'rejected'){
+    body = `
+      <p class="muted" style="margin-top:14px">سبب الرفض</p>
+      <p style="font-weight:700;margin-bottom:16px">${escapeHtml(d.rejectReason || 'غير محدد')}</p>
+      <button class="btn btn-primary" id="reapply-btn">تعديل الطلب وإعادة الإرسال</button>
+    `;
+  } else {
+    body = `<p class="muted" style="margin-top:14px">تم استلام طلبك، وجاري مراجعته من فريق الإرشاد.</p>`;
+  }
+
+  app.innerHTML = `
+  <header class="hero" style="padding:22px 0">
+    <div class="wrap topbar">
+      <button class="link-btn" id="back-home">→ الرئيسية</button>
+      <span style="font-weight:700;font-size:14px">متابعة الطلب</span>
+    </div>
+  </header>
+  <main><div class="wrap">
+    <div class="card">
+      <p class="muted">رقم الطلب</p>
+      <p style="font-weight:800;font-size:17px;margin-bottom:12px">${escapeHtml(requestId)}</p>
+      ${statusBadge(d.status)}
+      ${body}
+    </div>
+  </div></main>`;
+  document.getElementById('back-home').onclick = () => go('/');
+  const reapply = document.getElementById('reapply-btn');
+  if(reapply) reapply.onclick = () => go('/apply');
+
+  document.querySelectorAll('.no-copy-link').forEach(btn => {
+    btn.onclick = () => window.open(btn.dataset.url, '_blank', 'noopener');
+  });
+}
+
+/* ---------------- Admin: login gate ---------------- */
+function renderAdminGate(){
+  app.innerHTML = `<main><div class="wrap"><div class="loader"><div class="spinner"></div></div></div></main>`;
+  onAuthStateChanged(auth, (user) => {
+    if(user) renderAdminDashboard(user);
+    else renderAdminLogin();
+  }, { onlyOnce: true });
+}
+
+function renderAdminLogin(){
+  app.innerHTML = `
+  <header class="hero">
+    ${topoSvg()}${compassRoseSvg()}
+    <div class="wrap">
+      <span class="eyebrow-badge">🔒 لوحة فريق الإرشاد</span>
+      <h1 style="font-size:21px">تسجيل دخول فريق الإرشاد</h1>
+    </div>
+  </header>
+  <main><div class="wrap">
+    <form class="card" id="login-form">
+      <div class="field">
+        <label>Username (البريد الإلكتروني)</label>
+        <input type="text" id="l-email" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="l-pass" autocomplete="current-password" required>
+      </div>
+      <div class="err show" id="login-err" style="display:none"></div>
+      <button type="submit" class="btn btn-primary" id="login-btn">تسجيل الدخول</button>
+    </form>
+  </div></main>`;
+
+  document.getElementById('login-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('l-email').value.trim();
+    const pass = document.getElementById('l-pass').value;
+    const errBox = document.getElementById('login-err');
+    document.getElementById('login-btn').disabled = true;
+    try{
+      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      renderAdminDashboard(cred.user);
+    }catch(err){
+      errBox.style.display = 'block';
+      errBox.textContent = 'بيانات الدخول غير صحيحة';
+      document.getElementById('login-btn').disabled = false;
+    }
+  };
+}
+
+/* ---------------- Admin: dashboard ---------------- */
+let allRequests = [];
+let unsubRequests = null;
+
+function renderAdminDashboard(user){
+  app.innerHTML = `
+  <div class="admin-header">
+    <div class="admin-wrap row">
+      <div>
+        <h1>لوحة تحكم فريق الإرشاد</h1>
+        <div class="who">${escapeHtml(user.email)}</div>
+      </div>
+      <button class="btn btn-ghost" id="logout-btn" style="width:auto;padding:9px 16px;color:#fff;border-color:rgba(255,255,255,.4)">خروج</button>
+    </div>
+  </div>
+  <main><div class="admin-wrap">
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <button class="btn btn-teal" id="open-groups-btn" style="width:auto;padding:12px 22px;margin-bottom:16px">🔗 روابط الجروبات (الـ6 مجموعات + جروب الدفعة الأساسي)</button>
+
+    <button class="btn btn-ghost" id="reindex-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;font-size:13.5px">🔄 فهرسة أرقام الطلبات القديمة (مرة واحدة)</button>
+
+    <div class="card">
+      <div class="toolbar">
+        <input type="text" id="search-box" placeholder="بحث بالاسم / رقم الواتساب / رقم الطلب">
+        <select id="filter-status">
+          <option value="">كل الحالات</option>
+          <option value="pending">قيد المراجعة</option>
+          <option value="approved">مقبول</option>
+          <option value="rejected">مرفوض</option>
+        </select>
+        <select id="filter-group">
+          <option value="">كل المجموعات</option>
+          ${GROUPS.map(g=>`<option value="${g}">مجموعة ${g}</option>`).join('')}
+          <option value="${UNKNOWN_GROUP}">لم تُحدَّد بعد</option>
+        </select>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>Screenshot</th><th>رقم الطلب</th><th>اسم الطالب</th><th>واتساب</th><th>المجموعة</th><th>الحالة</th><th>التوقيع</th><th>التاريخ</th><th>الإجراء</th>
+          </tr></thead>
+          <tbody id="req-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div></main>
+  <div id="modal-root"></div>`;
+
+  document.getElementById('logout-btn').onclick = async () => {
+    if(unsubRequests) unsubRequests();
+    await signOut(auth);
+    go('/admin');
+    renderAdminGate();
+  };
+
+  document.getElementById('open-groups-btn').onclick = openGroupsModal;
+
+  // فهرسة الطلبات اللي اتقدمت قبل ميزة الاستعلام بالتليفون (آخر طلب لكل رقم)
+  document.getElementById('reindex-btn').onclick = async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try{
+      const seen = new Set(), items = [];
+      for(const r of allRequests){ // allRequests مرتبة من الأحدث للأقدم
+        if(!r.phone || seen.has(r.phone)) continue;
+        seen.add(r.phone); items.push(r);
+      }
+      for(let i = 0; i < items.length; i += 400){
+        const batch = writeBatch(db);
+        items.slice(i, i + 400).forEach(r =>
+          batch.set(doc(db,'phoneIndex',r.phone), { requestId: r.requestId, phone: r.phone }));
+        await withTimeout(batch.commit(), 20000);
+      }
+      alert(`تمت فهرسة ${items.length} رقم`);
+    }catch(err){ alert('حدث خطأ: ' + (err.code || '') + ' ' + err.message); }
+    btn.disabled = false;
+  };
+
+  const q = query(collection(db,'requests'), orderBy('createdAt','desc'));
+  unsubRequests = onSnapshot(q, (snap) => {
+    allRequests = snap.docs.map(d => d.data());
+    renderStats();
+    renderTable();
+  }, (err) => {
+    console.error(err);
+    document.getElementById('req-tbody').innerHTML =
+      `<tr><td colspan="9" class="center muted">تعذر تحميل الطلبات (${escapeHtml(err.message||'')})</td></tr>`;
+  });
+
+  document.getElementById('search-box').oninput = renderTable;
+  document.getElementById('filter-status').onchange = renderTable;
+  document.getElementById('filter-group').onchange = renderTable;
+}
+
+function renderStats(){
+  const total = allRequests.length;
+  const pending = allRequests.filter(r=>r.status==='pending').length;
+  const approved = allRequests.filter(r=>r.status==='approved').length;
+  const rejected = allRequests.filter(r=>r.status==='rejected').length;
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="n">${total}</div><div class="l">إجمالي الطلبات</div></div>
+    <div class="stat-card"><div class="n">${pending}</div><div class="l">🟡 قيد المراجعة</div></div>
+    <div class="stat-card"><div class="n">${approved}</div><div class="l">🟢 مقبولة</div></div>
+    <div class="stat-card"><div class="n">${rejected}</div><div class="l">🔴 مرفوضة</div></div>
+    <div class="stat-card"><div class="n">${pending}</div><div class="l">طلبات جديدة</div></div>
+  `;
+}
+
+function renderTable(){
+  const term = document.getElementById('search-box').value.trim().toLowerCase();
+  const st = document.getElementById('filter-status').value;
+  const grp = document.getElementById('filter-group').value;
+
+  const rows = allRequests.filter(r => {
+    if(st && r.status !== st) return false;
+    if(grp && r.group !== grp) return false;
+    if(term){
+      const hay = `${r.name} ${r.phone} ${r.requestId}`.toLowerCase();
+      if(!hay.includes(term)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('req-tbody').innerHTML = rows.length ? rows.map(r => `
+    <tr>
+      <td><img class="thumb" id="thumb-${escapeHtml(r.requestId)}" data-id="${escapeHtml(r.requestId)}" alt="Screenshot"></td>
+      <td>${escapeHtml(r.requestId)}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${escapeHtml(r.phone)}</td>
+      <td>${escapeHtml(groupLabel(r.group))}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>${r.reviewedBy ? escapeHtml(r.reviewedBy) : '<span class="muted">—</span>'}</td>
+      <td>${fmtDate(r.createdAt)}</td>
+      <td><button class="row-btn btn-teal" data-id="${escapeHtml(r.requestId)}">فتح</button></td>
+    </tr>
+  `).join('') : `<tr><td colspan="9" class="center muted" style="padding:24px">لا توجد طلبات مطابقة</td></tr>`;
+
+  document.querySelectorAll('#req-tbody button[data-id]').forEach(btn => {
+    btn.onclick = () => openRequestModal(btn.dataset.id);
+  });
+  document.querySelectorAll('#req-tbody img.thumb').forEach(img => {
+    img.onclick = () => openRequestModal(img.dataset.id);
+    loadThumb(img.dataset.id);
+  });
+}
+
+/* الصور بتتقرا من Firestore (requestImages) وبتتخزن مؤقتًا في الذاكرة */
+const thumbCache = {};
+async function getImageSrc(r){
+  if(thumbCache[r.requestId]) return thumbCache[r.requestId];
+  const s = await getDoc(doc(db,'requestImages',r.requestId));
+  const src = s.exists() ? s.data().data : null;
+  if(src) thumbCache[r.requestId] = src;
+  return src;
+}
+function loadThumb(requestId){
+  const r = allRequests.find(x => x.requestId === requestId);
+  if(!r) return;
+  getImageSrc(r).then(src => {
+    const el = document.getElementById(`thumb-${requestId}`);
+    if(el && src) el.src = src;
+  }).catch(() => {});
+}
+
+function openRequestModal(requestId){
+  const r = allRequests.find(x => x.requestId === requestId);
+  if(!r) return;
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+  <div class="modal-bg" id="modal-bg">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 style="font-size:17px">تفاصيل الطلب</h3>
+        <button class="close-x" id="modal-close">✕</button>
+      </div>
+      <div class="kv">
+        <b>الاسم</b><span>${escapeHtml(r.name)}</span>
+        <b>واتساب</b><span>${escapeHtml(r.phone)}</span>
+        <b>المجموعة</b><span>${escapeHtml(groupLabel(r.group))}</span>
+        <b>رقم الطلب</b><span>${escapeHtml(r.requestId)}</span>
+        <b>تاريخ التقديم</b><span>${fmtDate(r.createdAt)}</span>
+        <b>الحالة</b><span>${statusBadge(r.status)}</span>
+        ${r.reviewedBy ? `<b>وقّع عليه</b><span>${escapeHtml(r.reviewedBy)}</span>` : ''}
+        ${r.status==='rejected' ? `<b>سبب الرفض</b><span>${escapeHtml(r.rejectReason||'')}</span>` : ''}
+      </div>
+      <div id="ss-holder" class="muted center" style="margin-bottom:16px">جاري تحميل الصورة...</div>
+      <div id="reviewer-field" class="field">
+        <label>اسم المراجع (التوقيع)</label>
+        <input type="text" id="reviewer-name" placeholder="اكتب اسمك قبل القبول أو الرفض" style="direction:rtl;text-align:right">
+        <div class="err" id="err-reviewer">من فضلك اكتب اسمك أولًا</div>
+      </div>
+      <div id="modal-actions" class="stack">
+        <button class="btn btn-good" id="approve-btn">🟢 قبول الطلب</button>
+        <button class="btn btn-bad" id="reject-btn">🔴 رفض الطلب</button>
+      </div>
+      <div id="reject-panel" class="hidden" style="margin-top:14px">
+        <div class="field">
+          <label>سبب الرفض</label>
+          <select id="reject-reason-select">
+            ${REJECT_REASONS.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field" id="custom-reason-field" style="display:none">
+          <label>اكتب السبب</label>
+          <input type="text" id="custom-reason">
+        </div>
+        <button class="btn btn-bad" id="confirm-reject-btn">تأكيد الرفض</button>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('modal-close').onclick = () => root.innerHTML = '';
+  document.getElementById('modal-bg').onclick = (e) => { if(e.target.id === 'modal-bg') root.innerHTML=''; };
+
+  getImageSrc(r).then(src => {
+    const holder = document.getElementById('ss-holder');
+    if(!holder) return;
+    if(src) holder.outerHTML = `<img class="ss-img" src="${escapeHtml(src)}" alt="Screenshot">`;
+    else holder.textContent = 'لا توجد صورة مرفوعة';
+  }).catch(() => {
+    const holder = document.getElementById('ss-holder');
+    if(holder) holder.textContent = 'تعذر تحميل الصورة';
+  });
+
+  const approveBtn = document.getElementById('approve-btn');
+  const rejectBtn = document.getElementById('reject-btn');
+  const rejectPanel = document.getElementById('reject-panel');
+
+  const reviewerInput = document.getElementById('reviewer-name');
+  try{ reviewerInput.value = localStorage.getItem('reviewerName') || ''; }catch(e){}
+  const getReviewer = () => {
+    const v = reviewerInput.value.trim();
+    document.getElementById('err-reviewer').classList.toggle('show', !v);
+    if(v){ try{ localStorage.setItem('reviewerName', v); }catch(e){} }
+    return v;
+  };
+
+  // يسمح بتغيير الحالة في أي اتجاه (قبول ⇄ رفض) لتصحيح الأخطاء
+  const isPending = r.status === 'pending';
+  const isApproved = r.status === 'approved';
+  const isRejected = r.status === 'rejected';
+
+  if(isApproved){
+    approveBtn.classList.add('hidden');
+    rejectBtn.textContent = '🔴 تحويل الطلب إلى مرفوض';
+    document.getElementById('modal-actions').insertAdjacentHTML('beforebegin',
+      `<p class="muted" style="margin-bottom:10px">الطلب مقبول حاليًا. لو اتقبل بالغلط تقدر تحوّله لمرفوض، وروابط الجروبات هتختفي من صفحة الطالب.</p>`);
+  } else if(isRejected){
+    rejectBtn.classList.add('hidden');
+    approveBtn.textContent = '🟢 تحويل الطلب إلى مقبول';
+    document.getElementById('modal-actions').insertAdjacentHTML('beforebegin',
+      `<p class="muted" style="margin-bottom:10px">الطلب مرفوض حاليًا. لو اترفض بالغلط تقدر تحوّله لمقبول.</p>`);
+  }
+
+  approveBtn.onclick = async () => {
+    const reviewer = getReviewer();
+    if(!reviewer) return;
+    if(!isPending && !confirm('هل تريد تحويل الطلب إلى مقبول؟')) return;
+    approveBtn.disabled = true;
+    try{
+      const groupsDoc = await getDoc(doc(db,'meta','groupLinks'));
+      const links = groupsDoc.exists() ? groupsDoc.data() : {};
+      await updateDoc(doc(db,'requests',requestId), {
+        status: 'approved',
+        rejectReason: null,
+        groupLink: links[`group${r.group}`] || null,
+        mainGroupLink: links.main || null,
+        reviewedBy: reviewer,
+        reviewedAt: serverTimestamp()
+      });
+      root.innerHTML = '';
+    }catch(e){ alert('حدث خطأ: ' + e.message); approveBtn.disabled=false; }
+  };
+
+  rejectBtn.onclick = () => rejectPanel.classList.remove('hidden');
+  document.getElementById('reject-reason-select').onchange = (e) => {
+    document.getElementById('custom-reason-field').style.display =
+      e.target.value === 'سبب آخر' ? 'block' : 'none';
+  };
+  document.getElementById('confirm-reject-btn').onclick = async () => {
+    const reviewer = getReviewer();
+    if(!reviewer) return;
+    if(!isPending && !confirm('هل تريد تحويل الطلب إلى مرفوض؟ روابط الجروبات هتختفي من صفحة الطالب.')) return;
+    const sel = document.getElementById('reject-reason-select').value;
+    const custom = document.getElementById('custom-reason').value.trim();
+    const reason = sel === 'سبب آخر' ? (custom || 'سبب آخر') : sel;
+    try{
+      await updateDoc(doc(db,'requests',requestId), {
+        status: 'rejected',
+        rejectReason: reason,
+        groupLink: null,
+        mainGroupLink: null,
+        reviewedBy: reviewer,
+        reviewedAt: serverTimestamp()
+      });
+      root.innerHTML = '';
+    }catch(e){ alert('حدث خطأ: ' + e.message); }
+  };
+}
+
+async function openGroupsModal(){
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+  <div class="modal-bg" id="groups-modal-bg">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 style="font-size:17px">روابط الجروبات</h3>
+        <button class="close-x" id="groups-modal-close">✕</button>
+      </div>
+      <div class="field">
+        <label>رابط جروب الدفعة الأساسي (للكل)</label>
+        <input type="text" id="group-link-main">
+      </div>
+      <div class="groups-grid" id="groups-grid"></div>
+      <button class="btn btn-teal" id="save-groups" style="margin-top:16px">حفظ الروابط</button>
+      <p class="muted center" id="groups-saved" style="display:none;margin-top:8px">✓ تم الحفظ</p>
+    </div>
+  </div>`;
+
+  document.getElementById('groups-modal-close').onclick = () => root.innerHTML = '';
+  document.getElementById('groups-modal-bg').onclick = (e) => { if(e.target.id === 'groups-modal-bg') root.innerHTML=''; };
+
+  const grid = document.getElementById('groups-grid');
+  grid.innerHTML = GROUPS.map(g => `
+    <div class="group-row">
+      <label>مجموعة ${g}</label>
+      <input type="text" id="group-link-${g}" style="direction:ltr;text-align:left">
+    </div>
+  `).join('');
+
+  try{
+    const snap = await getDoc(doc(db,'meta','groupLinks'));
+    if(snap.exists()){
+      const data = snap.data();
+      const mainEl = document.getElementById('group-link-main');
+      if(mainEl && data.main) mainEl.value = data.main;
+      GROUPS.forEach(g => {
+        const el = document.getElementById(`group-link-${g}`);
+        if(el && data[`group${g}`]) el.value = data[`group${g}`];
+      });
+    }
+  }catch(e){ console.error(e); }
+
+  document.getElementById('save-groups').onclick = async () => {
+    const payload = { main: document.getElementById('group-link-main').value.trim() };
+    GROUPS.forEach(g => { payload[`group${g}`] = document.getElementById(`group-link-${g}`).value.trim(); });
+    try{
+      await withTimeout(setDoc(doc(db,'meta','groupLinks'), payload, { merge:true }), 15000);
+
+      // مزامنة الطلبات المقبولة بالفعل: الرابط بيتنسخ داخل الطلب وقت القبول،
+      // فلو الطلب اتقبل قبل حفظ الروابط (أو الرابط اتغير) لازم نحدّثه هنا
+      const toSync = allRequests.filter(r => r.status === 'approved' && (
+        (r.groupLink || null) !== (payload[`group${r.group}`] || null) ||
+        (r.mainGroupLink || null) !== (payload.main || null)
+      ));
+      for(let i = 0; i < toSync.length; i += 400){
+        const batch = writeBatch(db);
+        toSync.slice(i, i + 400).forEach(r => {
+          batch.update(doc(db,'requests',r.requestId), {
+            groupLink: payload[`group${r.group}`] || null,
+            mainGroupLink: payload.main || null
+          });
+        });
+        await withTimeout(batch.commit(), 20000);
+      }
+
+      const saved = document.getElementById('groups-saved');
+      saved.textContent = toSync.length ? `✓ تم الحفظ وتحديث ${toSync.length} طلب مقبول` : '✓ تم الحفظ';
+      saved.style.display = 'block';
+      setTimeout(()=>saved.style.display='none', 3000);
+    }catch(e){ alert('حدث خطأ أثناء الحفظ: ' + (e.code || '') + ' ' + e.message); }
+  };
+}
+
+route();
+</script>
+</body>
+  </html>
