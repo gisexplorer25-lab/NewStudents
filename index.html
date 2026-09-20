@@ -264,7 +264,7 @@ const auth = getAuth(fbApp);
 
 const PROGRAM_NAME = "برنامج المساحة ونظم المعلومات الجغرافية والاستشعار عن بعد";
 const YEAR = "2026";
-const GROUPS = ["1","2","3","4","5","6"];
+const GROUPS = ["1","2","3","4","5","6","7","8"];
 const UNKNOWN_GROUP = "unknown"; // الطالب لسه معرفش مجموعته
 const groupLabel = (g) => g === UNKNOWN_GROUP ? 'لم تُحدَّد بعد' : `مجموعة ${g}`;
 const REJECT_REASONS = [
@@ -831,7 +831,7 @@ function renderAdminDashboard(user){
   <main><div class="admin-wrap">
     <div class="stats-grid" id="stats-grid"></div>
 
-    <button class="btn btn-teal" id="open-groups-btn" style="width:auto;padding:12px 22px;margin-bottom:16px">🔗 روابط الجروبات (الـ6 مجموعات + جروب الدفعة الأساسي)</button>
+    <button class="btn btn-teal" id="open-groups-btn" style="width:auto;padding:12px 22px;margin-bottom:16px">🔗 روابط الجروبات (الـ8 مجموعات + جروب الدفعة الأساسي)</button>
 
     <button class="btn btn-ghost" id="reindex-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;font-size:13.5px">🔄 فهرسة أرقام الطلبات القديمة (مرة واحدة)</button>
 
