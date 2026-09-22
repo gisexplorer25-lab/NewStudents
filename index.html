@@ -138,7 +138,6 @@
   .status-pending{background:var(--warn-bg);color:var(--warn)}
   .status-approved{background:var(--good-bg);color:var(--good)}
   .status-rejected{background:var(--bad-bg);color:var(--bad)}
-  .status-groupupdate{background:#E3F0F1;color:var(--teal-dark)}
 
   .req-id-box{
     background:var(--paper-2);border:1.5px dashed var(--maroon-light);
@@ -364,9 +363,6 @@ function statusBadge(status){
   if(status==='approved') return `<span class="status-badge status-approved">🟢 تم القبول</span>`;
   if(status==='rejected') return `<span class="status-badge status-rejected">🔴 مرفوض</span>`;
   return `<span class="status-badge status-pending">🟡 قيد المراجعة</span>`;
-}
-function groupUpdateBadge(r){
-  return r.groupUpdateRequested ? `<span class="status-badge status-groupupdate">🔵 عرف مجموعته</span>` : '';
 }
 
 function topoSvg(){
@@ -710,20 +706,16 @@ async function renderTrackStatus(requestId){
       : '';
     let pickGroupBlock = '';
     if(noGroup){
-      if(d.groupUpdateRequested){
-        pickGroupBlock = `<p class="muted" style="margin-top:14px">تم استلام مجموعتك، وجاري ربط رابط الجروب من فريق الإرشاد. تابع الصفحة دي كل شوية.</p>`;
-      } else {
-        pickGroupBlock = `
-          <div class="field" style="margin-top:14px">
-            <label>عرفت مجموعتك دلوقتي؟</label>
-            <select id="pick-group-select">
-              <option value="">اختر المجموعة</option>
-              ${GROUPS.map(g=>`<option value="${g}">مجموعة ${g}</option>`).join('')}
-            </select>
-            <div class="err" id="err-pick-group">من فضلك اختر المجموعة</div>
-            <button type="button" class="btn btn-teal" id="pick-group-btn" style="margin-top:10px">إرسال المجموعة</button>
-          </div>`;
-      }
+      pickGroupBlock = `
+        <div class="field" style="margin-top:14px">
+          <label>عرفت مجموعتك دلوقتي؟</label>
+          <select id="pick-group-select">
+            <option value="">اختر المجموعة</option>
+            ${GROUPS.map(g=>`<option value="${g}">مجموعة ${g}</option>`).join('')}
+          </select>
+          <div class="err" id="err-pick-group">من فضلك اختر المجموعة</div>
+          <button type="button" class="btn btn-teal" id="pick-group-btn" style="margin-top:10px">إرسال المجموعة</button>
+        </div>`;
     }
     body = `
       <p class="muted" style="margin-top:14px">المجموعة</p>
@@ -777,10 +769,12 @@ async function renderTrackStatus(requestId){
       if(!g) return;
       pickBtn.disabled = true;
       try{
+        const groupsDoc = await withTimeout(getDoc(doc(db,'meta','groupLinks')), 15000);
+        const links = groupsDoc.exists() ? groupsDoc.data() : {};
         await withTimeout(updateDoc(doc(db,'requests',requestId), {
           group: g,
-          groupUpdateRequested: true,
-          groupUpdateAt: serverTimestamp()
+          groupLink: links[`group${g}`] || null,
+          groupUpdateRequested: false
         }), 15000);
         renderTrackStatus(requestId);
       }catch(e){
@@ -888,7 +882,6 @@ function renderAdminDashboard(user){
           <option value="pending">قيد المراجعة</option>
           <option value="approved">مقبول</option>
           <option value="rejected">مرفوض</option>
-          <option value="group-update">🔵 عرفوا مجموعتهم (بانتظار ربط الجروب)</option>
         </select>
         <select id="filter-group">
           <option value="">كل المجموعات</option>
@@ -953,13 +946,12 @@ function renderStats(){
   const pending = allRequests.filter(r=>r.status==='pending').length;
   const approved = allRequests.filter(r=>r.status==='approved').length;
   const rejected = allRequests.filter(r=>r.status==='rejected').length;
-  const groupUpdates = allRequests.filter(r=>r.groupUpdateRequested).length;
   document.getElementById('stats-grid').innerHTML = `
     <div class="stat-card"><div class="n">${total}</div><div class="l">إجمالي الطلبات</div></div>
     <div class="stat-card"><div class="n">${pending}</div><div class="l">🟡 قيد المراجعة</div></div>
     <div class="stat-card"><div class="n">${approved}</div><div class="l">🟢 مقبولة</div></div>
     <div class="stat-card"><div class="n">${rejected}</div><div class="l">🔴 مرفوضة</div></div>
-    <div class="stat-card"><div class="n">${groupUpdates}</div><div class="l">🔵 عرفوا مجموعتهم</div></div>
+    <div class="stat-card"><div class="n">${pending}</div><div class="l">طلبات جديدة</div></div>
   `;
 }
 
@@ -969,8 +961,7 @@ function renderTable(){
   const grp = document.getElementById('filter-group').value;
 
   const rows = allRequests.filter(r => {
-    if(st === 'group-update'){ if(!r.groupUpdateRequested) return false; }
-    else if(st && r.status !== st) return false;
+    if(st && r.status !== st) return false;
     if(grp && r.group !== grp) return false;
     if(term){
       const hay = `${r.name} ${r.phone} ${r.requestId}`.toLowerCase();
@@ -986,7 +977,7 @@ function renderTable(){
       <td>${escapeHtml(r.name)}</td>
       <td>${escapeHtml(r.phone)}</td>
       <td>${escapeHtml(groupLabel(r.group))}</td>
-      <td>${statusBadge(r.status)} ${groupUpdateBadge(r)}</td>
+      <td>${statusBadge(r.status)}</td>
       <td>${r.reviewedBy ? escapeHtml(r.reviewedBy) : '<span class="muted">—</span>'}</td>
       <td>${fmtDate(r.createdAt)}</td>
       <td><button class="row-btn btn-teal" data-id="${escapeHtml(r.requestId)}">فتح</button></td>
@@ -1034,7 +1025,7 @@ function openRequestModal(requestId){
       <div class="kv">
         <b>الاسم</b><span>${escapeHtml(r.name)}</span>
         <b>واتساب</b><span>${escapeHtml(r.phone)}</span>
-        <b>المجموعة</b><span>${escapeHtml(groupLabel(r.group))}${r.groupUpdateRequested ? ' 🔵 (جديدة، بانتظار ربط الجروب)' : ''}</span>
+        <b>المجموعة</b><span>${escapeHtml(groupLabel(r.group))}</span>
         <b>رقم الطلب</b><span>${escapeHtml(r.requestId)}</span>
         <b>تاريخ التقديم</b><span>${fmtDate(r.createdAt)}</span>
         <b>الحالة</b><span>${statusBadge(r.status)}</span>
@@ -1103,10 +1094,6 @@ function openRequestModal(requestId){
     rejectBtn.textContent = '🔴 تحويل الطلب إلى مرفوض';
     document.getElementById('modal-actions').insertAdjacentHTML('beforebegin',
       `<p class="muted" style="margin-bottom:10px">الطلب مقبول حاليًا. لو اتقبل بالغلط تقدر تحوّله لمرفوض، وروابط الجروبات هتختفي من صفحة الطالب.</p>`);
-    if(r.groupUpdateRequested){
-      document.getElementById('modal-actions').insertAdjacentHTML('afterbegin',
-        `<button class="btn btn-teal" id="link-group-btn">🔵 ربط رابط جروب المجموعة الجديدة</button>`);
-    }
   } else if(isRejected){
     rejectBtn.classList.add('hidden');
     approveBtn.textContent = '🟢 تحويل الطلب إلى مقبول';
@@ -1133,26 +1120,6 @@ function openRequestModal(requestId){
       root.innerHTML = '';
     }catch(e){ alert('حدث خطأ: ' + e.message); approveBtn.disabled=false; }
   };
-
-  const linkGroupBtn = document.getElementById('link-group-btn');
-  if(linkGroupBtn){
-    linkGroupBtn.onclick = async () => {
-      const reviewer = getReviewer();
-      if(!reviewer) return;
-      linkGroupBtn.disabled = true;
-      try{
-        const groupsDoc = await getDoc(doc(db,'meta','groupLinks'));
-        const links = groupsDoc.exists() ? groupsDoc.data() : {};
-        await updateDoc(doc(db,'requests',requestId), {
-          groupLink: links[`group${r.group}`] || null,
-          groupUpdateRequested: false,
-          reviewedBy: reviewer,
-          reviewedAt: serverTimestamp()
-        });
-        root.innerHTML = '';
-      }catch(e){ alert('حدث خطأ: ' + e.message); linkGroupBtn.disabled = false; }
-    };
-  }
 
   rejectBtn.onclick = () => rejectPanel.classList.remove('hidden');
   document.getElementById('reject-reason-select').onchange = (e) => {
